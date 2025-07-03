@@ -27,8 +27,7 @@ Agentic-Workflows/
 ├── phase_2/
 │   ├── agentic_workflow.py
 │   ├── Product-Spec-Email-Router.txt
-│   └── .env
-└── README.md
+│└── README.md
 ```
 
 ## Phase 1: Agent Library
