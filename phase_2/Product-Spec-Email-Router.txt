@@ -1,0 +1,78 @@
+# Product Specification Email Router
+
+## Overview
+This document defines the routing logic for product specification emails. It helps determine which team member should handle different types of product-related inquiries.
+
+## Team Roles
+
+### Product Manager
+- Handles product strategy and roadmap
+- Responsible for feature prioritization
+- Manages product requirements and specifications
+- Coordinates with stakeholders
+- Analyzes market trends and customer needs
+
+### Program Manager
+- Handles project planning and scheduling
+- Responsible for resource allocation
+- Manages cross-team coordination
+- Tracks project progress and milestones
+- Identifies and mitigates risks
+
+### Development Engineer
+- Handles technical implementation
+- Responsible for code development
+- Manages technical architecture
+- Evaluates technical feasibility
+- Identifies and resolves technical challenges
+
+## Routing Rules
+
+### Route to Product Manager when:
+- The email discusses product vision or strategy
+- The inquiry is about feature prioritization
+- The message concerns market analysis or customer needs
+- The email requests changes to product requirements
+- The inquiry is about product roadmap or timeline at a high level
+- The message discusses competitive analysis or market positioning
+
+### Route to Program Manager when:
+- The email concerns project timelines or schedules
+- The inquiry is about resource allocation or team coordination
+- The message discusses project dependencies or blockers
+- The email requests status updates on project milestones
+- The inquiry is about risk management or mitigation strategies
+- The message concerns cross-team collaboration or communication
+
+### Route to Development Engineer when:
+- The email discusses technical implementation details
+- The inquiry is about code-level issues or bugs
+- The message concerns system architecture or design
+- The email requests information about technical feasibility
+- The inquiry is about performance optimization or technical debt
+- The message discusses API specifications or integration details
+
+## Examples
+
+### Product Manager Examples:
+- "We need to prioritize the social sharing feature for the next release."
+- "Can we analyze how our pricing compares to Competitor X's new offering?"
+- "The customer feedback suggests we should reconsider the dashboard layout."
+
+### Program Manager Examples:
+- "When can we expect the payment integration to be completed?"
+- "We need to coordinate with the marketing team for the launch."
+- "What's the status of the Q3 deliverables?"
+
+### Development Engineer Examples:
+- "The authentication service is returning 500 errors intermittently."
+- "How should we implement the caching layer for the product catalog?"
+- "Can we optimize the database queries for the reporting feature?"
+
+## Handling Ambiguous Requests
+If a request could be handled by multiple roles, consider:
+1. The primary focus of the request (strategic, operational, or technical)
+2. The expertise required to provide the most valuable response
+3. The expected outcome or deliverable from the request
+
+When truly ambiguous, route to the Product Manager who can then delegate as appropriate.
