@@ -1,0 +1,6 @@
+PROMPT:
+Process this query: 'Can you tell me more about your company?'
+
+RESPONSE:
+PRODUCT TEAM: We'll look into your request about: Can you tell me more about your company?
+

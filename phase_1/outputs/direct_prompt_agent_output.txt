@@ -1,0 +1,7 @@
+PROMPT:
+Explain the concept of recursion in programming in 3 sentences.
+
+RESPONSE:
+Recursion in programming is a technique where a function calls itself in order to solve a problem. This leads to solving complex problems by breaking them down into simpler subproblems. Recursion involves two main parts: a base case that determines when the function should stop calling itself, and a recursive case that defines how the function should call itself with a simplified version of the problem.
+
+SOURCE OF KNOWLEDGE: The agent uses its built-in knowledge to respond to the prompt.

@@ -27,6 +27,32 @@ from phase_1.workflow_agents.base_agents import (
     ActionPlanningAgent
 )
 
+# Import knowledge and personas
+from phase_2.knowledge_and_personas import (
+    knowledge_product_manager,
+    persona_product_manager,
+    persona_product_manager_eval,
+    knowledge_program_manager,
+    persona_program_manager,
+    persona_program_manager_eval,
+    knowledge_dev_engineer,
+    persona_dev_engineer,
+    persona_dev_engineer_eval,
+    knowledge_action_planning,
+    persona_action_planning,
+    knowledge_project_planning,
+    persona_project_planning,
+    knowledge_user_stories,
+    persona_user_stories,
+    knowledge_features,
+    persona_features,
+    knowledge_engineering_tasks,
+    persona_engineering_tasks
+)
+
+# Import utility functions
+from phase_2.utils import parse_json_response
+
 def load_routing_knowledge():
     """
     Load the routing knowledge from the Product-Spec-Email-Router.txt file.
@@ -45,25 +71,15 @@ def create_product_manager_agent():
     Returns:
         KnowledgeAugmentedPromptAgent: The product manager agent
     """
-    product_knowledge = """
-    As a Product Manager, you are responsible for:
-    - Defining product vision and strategy
-    - Prioritizing features based on customer needs and business goals
-    - Creating and maintaining product requirements
-    - Coordinating with stakeholders to ensure alignment
-    - Analyzing market trends and customer feedback
-
-    When responding to inquiries:
-    - Focus on strategic aspects of the product
-    - Consider market positioning and competitive landscape
-    - Emphasize customer value and business impact
-    - Provide clear direction on product priorities
-    - Be data-driven in your decision making
-    """
+    # Append product_spec to knowledge if available
+    product_spec = load_routing_knowledge()
+    full_knowledge = knowledge_product_manager
+    if product_spec:
+        full_knowledge = f"{knowledge_product_manager}\n\nProduct Specification:\n{product_spec}"
 
     return KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a Product Manager responsible for product strategy, requirements, and stakeholder coordination.",
-        knowledge=product_knowledge
+        system_prompt=persona_product_manager,
+        knowledge=full_knowledge
     )
 
 def create_program_manager_agent():
@@ -73,25 +89,9 @@ def create_program_manager_agent():
     Returns:
         KnowledgeAugmentedPromptAgent: The program manager agent
     """
-    program_knowledge = """
-    As a Program Manager, you are responsible for:
-    - Planning and scheduling project activities
-    - Allocating resources effectively
-    - Coordinating across teams to ensure smooth execution
-    - Tracking progress against milestones
-    - Identifying and mitigating project risks
-
-    When responding to inquiries:
-    - Focus on operational aspects of the project
-    - Provide clear timelines and dependencies
-    - Emphasize coordination and communication
-    - Be specific about resource requirements
-    - Address risks and mitigation strategies
-    """
-
     return KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a Program Manager responsible for project planning, scheduling, and cross-team coordination.",
-        knowledge=program_knowledge
+        system_prompt=persona_program_manager,
+        knowledge=knowledge_program_manager
     )
 
 def create_development_engineer_agent():
@@ -101,25 +101,9 @@ def create_development_engineer_agent():
     Returns:
         KnowledgeAugmentedPromptAgent: The development engineer agent
     """
-    engineer_knowledge = """
-    As a Development Engineer, you are responsible for:
-    - Implementing technical solutions
-    - Developing and maintaining code
-    - Designing system architecture
-    - Evaluating technical feasibility
-    - Resolving technical issues and bugs
-
-    When responding to inquiries:
-    - Focus on technical implementation details
-    - Provide specific code or architecture recommendations
-    - Consider performance, scalability, and maintainability
-    - Be clear about technical constraints and trade-offs
-    - Suggest practical solutions to technical challenges
-    """
-
     return KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a Development Engineer responsible for technical implementation, architecture, and problem-solving.",
-        knowledge=engineer_knowledge
+        system_prompt=persona_dev_engineer,
+        knowledge=knowledge_dev_engineer
     )
 
 def create_routing_agent(routing_knowledge):
@@ -187,19 +171,21 @@ def create_product_manager_evaluation_agent():
     Returns:
         EvaluationAgent: The specialized evaluation agent
     """
-    persona = """
-    As a Product Management Evaluator, you have:
-    - Deep understanding of product strategy and market positioning
-    - Experience in feature prioritization and roadmap planning
-    - Knowledge of user experience principles and customer needs analysis
-    - Ability to assess business value and market impact
-    - Expertise in evaluating product requirements clarity and completeness
-    """
+    # Create the product manager agent to evaluate
+    agent_to_evaluate = create_product_manager_agent()
+
+    evaluation_criteria = [
+        "Strategic Thinking", 
+        "Customer Focus", 
+        "Market Awareness", 
+        "Clarity", 
+        "Actionability"
+    ]
 
     return EvaluationAgent(
         system_prompt=f"""You are a specialized evaluator for Product Manager responses.
 
-        {persona}
+        {persona_product_manager_eval}
 
         Your job is to assess how well the Product Manager's response addresses strategic product concerns,
         demonstrates customer focus, shows market awareness, provides clarity, and offers actionable next steps.
@@ -213,19 +199,21 @@ def create_program_manager_evaluation_agent():
     Returns:
         EvaluationAgent: The specialized evaluation agent
     """
-    persona = """
-    As a Program Management Evaluator, you have:
-    - Expertise in project planning and timeline assessment
-    - Experience in resource allocation and team coordination
-    - Knowledge of risk management and mitigation strategies
-    - Ability to evaluate communication effectiveness across teams
-    - Understanding of project dependencies and critical path analysis
-    """
+    # Create the program manager agent to evaluate
+    agent_to_evaluate = create_program_manager_agent()
+
+    evaluation_criteria = [
+        "Project Planning", 
+        "Resource Management", 
+        "Risk Assessment", 
+        "Timeline Accuracy", 
+        "Clarity"
+    ]
 
     return EvaluationAgent(
         system_prompt=f"""You are a specialized evaluator for Program Manager responses.
 
-        {persona}
+        {persona_program_manager_eval}
 
         Your job is to assess how well the Program Manager's response addresses project planning,
         resource management, risk assessment, timeline accuracy, and provides clear next steps.
@@ -239,19 +227,21 @@ def create_development_engineer_evaluation_agent():
     Returns:
         EvaluationAgent: The specialized evaluation agent
     """
-    persona = """
-    As a Development Engineering Evaluator, you have:
-    - Deep technical knowledge across multiple programming languages and frameworks
-    - Experience in system architecture and design patterns
-    - Expertise in code quality assessment and performance optimization
-    - Understanding of security best practices and vulnerability assessment
-    - Knowledge of scalability and maintainability principles
-    """
+    # Create the development engineer agent to evaluate
+    agent_to_evaluate = create_development_engineer_agent()
+
+    evaluation_criteria = [
+        "Technical Accuracy", 
+        "Implementation Feasibility", 
+        "Code Quality", 
+        "Performance Consideration", 
+        "Security Awareness"
+    ]
 
     return EvaluationAgent(
         system_prompt=f"""You are a specialized evaluator for Development Engineer responses.
 
-        {persona}
+        {persona_dev_engineer_eval}
 
         Your job is to assess how well the Development Engineer's response addresses technical accuracy,
         implementation feasibility, code quality considerations, performance implications, and security awareness.
@@ -266,7 +256,7 @@ def create_action_planning_agent():
         ActionPlanningAgent: The action planning agent
     """
     return ActionPlanningAgent(
-        system_prompt="You are a workflow coordinator. Your job is to plan and execute the steps needed to process product specification emails."
+        system_prompt=persona_action_planning
     )
 
 def product_manager_support_function(email_content):
@@ -277,13 +267,13 @@ def product_manager_support_function(email_content):
         email_content (str): The content of the email to process
 
     Returns:
-        dict: The processing results
+        dict: The processing results with final_response only
     """
     # Create the product manager agent
     product_manager = create_product_manager_agent()
 
     # Generate response
-    response = product_manager.run(email_content)
+    response = product_manager.respond(email_content)
 
     # Create specialized evaluation agent for product manager
     evaluation_agent = create_product_manager_evaluation_agent()
@@ -292,17 +282,17 @@ def product_manager_support_function(email_content):
     evaluation_result = evaluation_agent.evaluate(
         email_content,
         response,
-        ["Strategic Thinking", "Customer Focus", "Market Awareness", "Clarity", "Actionability"]
+        ["Strategic Thinking", "Customer Focus", "Market Awareness", "Clarity", "Actionability"],
+        max_iterations=2
     )
 
-    # Generate user stories
-    user_stories = generate_user_stories(email_content, response)
+    # Extract the final response from the evaluation result
+    final_response = evaluation_result.get("final_response", response)
 
-    return {
-        "response": response,
-        "evaluation": evaluation_result,
-        "user_stories": user_stories
-    }
+    # Generate user stories
+    user_stories = generate_user_stories(email_content, final_response)
+
+    return final_response
 
 def program_manager_support_function(email_content):
     """
@@ -312,13 +302,13 @@ def program_manager_support_function(email_content):
         email_content (str): The content of the email to process
 
     Returns:
-        dict: The processing results
+        dict: The processing results with final_response only
     """
     # Create the program manager agent
     program_manager = create_program_manager_agent()
 
     # Generate response
-    response = program_manager.run(email_content)
+    response = program_manager.respond(email_content)
 
     # Create specialized evaluation agent for program manager
     evaluation_agent = create_program_manager_evaluation_agent()
@@ -327,17 +317,17 @@ def program_manager_support_function(email_content):
     evaluation_result = evaluation_agent.evaluate(
         email_content,
         response,
-        ["Project Planning", "Resource Management", "Risk Assessment", "Timeline Accuracy", "Clarity"]
+        ["Project Planning", "Resource Management", "Risk Assessment", "Timeline Accuracy", "Clarity"],
+        max_iterations=2
     )
 
-    # Generate features
-    features = generate_features(email_content, response)
+    # Extract the final response from the evaluation result
+    final_response = evaluation_result.get("final_response", response)
 
-    return {
-        "response": response,
-        "evaluation": evaluation_result,
-        "features": features
-    }
+    # Generate features
+    features = generate_features(email_content, final_response)
+
+    return final_response
 
 def development_engineer_support_function(email_content):
     """
@@ -347,13 +337,13 @@ def development_engineer_support_function(email_content):
         email_content (str): The content of the email to process
 
     Returns:
-        dict: The processing results
+        dict: The processing results with final_response only
     """
     # Create the development engineer agent
     development_engineer = create_development_engineer_agent()
 
     # Generate response
-    response = development_engineer.run(email_content)
+    response = development_engineer.respond(email_content)
 
     # Create specialized evaluation agent for development engineer
     evaluation_agent = create_development_engineer_evaluation_agent()
@@ -362,17 +352,17 @@ def development_engineer_support_function(email_content):
     evaluation_result = evaluation_agent.evaluate(
         email_content,
         response,
-        ["Technical Accuracy", "Implementation Feasibility", "Code Quality", "Performance Consideration", "Security Awareness"]
+        ["Technical Accuracy", "Implementation Feasibility", "Code Quality", "Performance Consideration", "Security Awareness"],
+        max_iterations=2
     )
 
-    # Generate engineering tasks
-    engineering_tasks = generate_engineering_tasks(email_content, response)
+    # Extract the final response from the evaluation result
+    final_response = evaluation_result.get("final_response", response)
 
-    return {
-        "response": response,
-        "evaluation": evaluation_result,
-        "engineering_tasks": engineering_tasks
-    }
+    # Generate engineering tasks
+    engineering_tasks = generate_engineering_tasks(email_content, final_response)
+
+    return final_response
 
 def generate_user_stories(email_content, response):
     """
@@ -387,19 +377,8 @@ def generate_user_stories(email_content, response):
     """
     # Create a specialized agent for generating user stories
     agent = KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a product manager specialized in creating user stories.",
-        knowledge="""
-        User stories should follow the format:
-        As a [type of user], I want [an action] so that [a benefit/value].
-
-        Good user stories are:
-        - Independent
-        - Negotiable
-        - Valuable
-        - Estimable
-        - Small
-        - Testable
-        """
+        system_prompt=persona_user_stories,
+        knowledge=knowledge_user_stories
     )
 
     prompt = f"""
@@ -417,7 +396,7 @@ def generate_user_stories(email_content, response):
     Return the user stories as a JSON array of strings.
     """
 
-    result = agent.run(prompt)
+    result = agent.respond(prompt)
 
     # Try to parse the result as JSON, if it fails, return it as a string
     try:
@@ -434,25 +413,12 @@ def generate_features(email_content, response):
         response (str): The response from the program manager
 
     Returns:
-        list: List of features
+        list: List of features with required format
     """
     # Create a specialized agent for generating features
     agent = KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a program manager specialized in defining product features.",
-        knowledge="""
-        Features should be:
-        - Specific and well-defined
-        - Measurable
-        - Aligned with product goals
-        - Realistic to implement
-        - Time-bound
-
-        Each feature should include:
-        - Name
-        - Description
-        - Priority (High, Medium, Low)
-        - Estimated effort
-        """
+        system_prompt=persona_features,
+        knowledge=knowledge_features
     )
 
     prompt = f"""
@@ -465,21 +431,30 @@ def generate_features(email_content, response):
     {response}
 
     Format each feature as a JSON object with the following properties:
-    - name: The name of the feature
-    - description: A brief description of the feature
-    - priority: The priority (High, Medium, Low)
-    - effort: Estimated effort (Small, Medium, Large)
+    - Feature Name: The name of the feature
+    - Description: A brief description of the feature
+    - Key Functionality: The main functionality provided by the feature
+    - User Benefit: How this feature benefits the user
 
     Return the features as a JSON array of objects.
     """
 
-    result = agent.run(prompt)
+    result = agent.respond(prompt)
 
     # Try to parse the result as JSON, if it fails, return it as a string
     try:
-        return json.loads(result)
+        parsed_result = parse_json_response(result)
+        if parsed_result:
+            return parsed_result
+        return [{"Feature Name": "Feature parsing failed", 
+                 "Description": "Could not parse feature JSON", 
+                 "Key Functionality": "N/A", 
+                 "User Benefit": "N/A"}]
     except:
-        return [result]
+        return [{"Feature Name": "Feature parsing failed", 
+                 "Description": result, 
+                 "Key Functionality": "N/A", 
+                 "User Benefit": "N/A"}]
 
 def generate_engineering_tasks(email_content, response):
     """
@@ -490,25 +465,12 @@ def generate_engineering_tasks(email_content, response):
         response (str): The response from the development engineer
 
     Returns:
-        list: List of engineering tasks
+        list: List of engineering tasks with required format
     """
     # Create a specialized agent for generating engineering tasks
     agent = KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a development engineer specialized in breaking down technical requirements into tasks.",
-        knowledge="""
-        Engineering tasks should be:
-        - Specific and actionable
-        - Small enough to be completed in 1-3 days
-        - Technical in nature
-        - Testable
-        - Independent when possible
-
-        Each task should include:
-        - Name
-        - Description
-        - Technical requirements
-        - Estimated complexity
-        """
+        system_prompt=persona_engineering_tasks,
+        knowledge=knowledge_engineering_tasks
     )
 
     prompt = f"""
@@ -521,21 +483,39 @@ def generate_engineering_tasks(email_content, response):
     {response}
 
     Format each task as a JSON object with the following properties:
-    - name: The name of the task
-    - description: A brief description of what needs to be done
-    - requirements: Technical requirements or considerations
-    - complexity: Estimated complexity (Simple, Moderate, Complex)
+    - Task ID: A unique identifier for the task (e.g., TASK-001)
+    - Task Title: A short, descriptive title
+    - Related User Story: Which user story this task relates to
+    - Description: A detailed description of what needs to be done
+    - Acceptance Criteria: Criteria that must be met for the task to be considered complete
+    - Estimated Effort: Estimated effort in story points or days
+    - Dependencies: Any dependencies on other tasks or systems
 
     Return the tasks as a JSON array of objects.
     """
 
-    result = agent.run(prompt)
+    result = agent.respond(prompt)
 
     # Try to parse the result as JSON, if it fails, return it as a string
     try:
-        return json.loads(result)
+        parsed_result = parse_json_response(result)
+        if parsed_result:
+            return parsed_result
+        return [{"Task ID": "TASK-ERR", 
+                 "Task Title": "Task parsing failed", 
+                 "Related User Story": "N/A", 
+                 "Description": "Could not parse task JSON", 
+                 "Acceptance Criteria": "N/A", 
+                 "Estimated Effort": "N/A", 
+                 "Dependencies": "N/A"}]
     except:
-        return [result]
+        return [{"Task ID": "TASK-ERR", 
+                 "Task Title": "Task parsing failed", 
+                 "Related User Story": "N/A", 
+                 "Description": result, 
+                 "Acceptance Criteria": "N/A", 
+                 "Estimated Effort": "N/A", 
+                 "Dependencies": "N/A"}]
 
 def process_email(email_content):
     """
@@ -746,15 +726,8 @@ def generate_consolidated_output(results):
     """
     # Create a specialized agent for consolidating the output
     agent = KnowledgeAugmentedPromptAgent(
-        system_prompt="You are a project planning specialist responsible for creating comprehensive project plans.",
-        knowledge="""
-        A good project plan includes:
-        1. User stories that capture the requirements from the user's perspective
-        2. Features that define what will be built to satisfy the user stories
-        3. Engineering tasks that break down the technical work needed to implement the features
-
-        The plan should be well-organized, prioritized, and aligned across all three levels.
-        """
+        system_prompt=persona_project_planning,
+        knowledge=knowledge_project_planning
     )
 
     # Extract user stories, features, and engineering tasks from the results
@@ -806,7 +779,7 @@ def generate_consolidated_output(results):
     Your summary should highlight the key aspects of the plan and how the components align.
     """
 
-    summary = agent.run(prompt)
+    summary = agent.respond(prompt)
     consolidated_output["summary"] = summary
 
     return consolidated_output

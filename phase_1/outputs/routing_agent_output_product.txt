@@ -1,0 +1,6 @@
+PROMPT:
+Route this query: 'I'm interested in learning more about your premium plan features.'
+
+RESPONSE:
+{"route": "product", "confidence": 0.44239258025158446, "explanation": "This request matches the expertise of product with a similarity score of 0.44."}
+

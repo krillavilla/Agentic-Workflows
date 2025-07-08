@@ -1,0 +1,6 @@
+PROMPT:
+What are the key features of Python programming language?
+
+RESPONSE:
+The key features of Python programming language include dynamic typing and binding, easy-to-read syntax, object-oriented programming support, extensive standard library, and a large ecosystem of third-party packages.
+

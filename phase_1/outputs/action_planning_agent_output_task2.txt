@@ -1,0 +1,6 @@
+PROMPT:
+Create a plan for this task: 'Search for the latest AI research papers and email a summary to research@example.com.'
+
+RESPONSE:
+{'task': 'Search for the latest AI research papers and email a summary to research@example.com.', 'plan': '```json\n[\n    {\n        "action": "search_database",\n        "parameters": {\n            "query": "latest AI research papers",\n            "limit": 5\n        },\n        "explanation": "Search for the latest AI research papers in the database."\n    },\n    {\n        "action": "generate_report",\n        "parameters": {\n            "data": "summary of the latest AI research papers",\n            "format": "text"\n        },\n        "explanation": "Generate a summary report of the search results in text format."\n    },\n    {\n        "action": "send_email",\n        "parameters": {\n            "to": "research@example.com",\n            "subject": "Summary of Latest AI Research Papers",\n            "body": "Attached is the summary of the latest AI research papers."\n        },\n        "explanation": "Send an email with the summary report attached to the specified email address."\n    }\n]\n```  ', 'results': []}
+

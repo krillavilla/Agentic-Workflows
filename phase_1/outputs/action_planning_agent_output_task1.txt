@@ -1,0 +1,6 @@
+PROMPT:
+Create a plan for this task: 'Find information about renewable energy, send an email to team@example.com with the findings, and generate a PDF report.'
+
+RESPONSE:
+{'task': 'Find information about renewable energy, send an email to team@example.com with the findings, and generate a PDF report.', 'plan': '```json\n[\n    {\n        "action": "search_database",\n        "parameters": {\n            "query": "renewable energy",\n            "limit": 1\n        },\n        "explanation": "Searching the database for information on renewable energy to gather relevant findings."\n    },\n    {\n        "action": "send_email",\n        "parameters": {\n            "to": "team@example.com",\n            "subject": "Renewable Energy Information",\n            "body": "I have found information on renewable energy. Please see the attached PDF report."\n        },\n        "explanation": "Sending an email to team@example.com with the findings on renewable energy."\n    },\n    {\n        "action": "generate_report",\n        "parameters": {\n            "data": "Renewable Energy Information",\n            "format": "PDF"\n        },\n        "explanation": "Generating a PDF report with the information on renewable energy for easy sharing and reference."\n    }\n]\n```', 'results': []}
+

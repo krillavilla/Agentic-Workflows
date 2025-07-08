@@ -18,13 +18,14 @@ client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-def safe_openai_call(messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo") -> Dict[str, Any]:
+def safe_openai_call(messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo", temperature: float = 0.7) -> Dict[str, Any]:
     """
     Makes a safe call to the OpenAI API with error handling.
 
     Args:
         messages (List[Dict[str, str]]): The messages to send to the API
         model (str): The model to use
+        temperature (float): The temperature to use for the API call
 
     Returns:
         Dict[str, Any]: Either the API response or an error message
@@ -32,7 +33,8 @@ def safe_openai_call(messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo
     try:
         response = client.chat.completions.create(
             model=model,
-            messages=messages
+            messages=messages,
+            temperature=temperature
         )
         return {
             "success": True,
@@ -79,15 +81,15 @@ class DirectPromptAgent:
         """
         self.system_prompt = system_prompt
 
-    def run(self, prompt: str) -> str:
+    def respond(self, prompt: str) -> str:
         """
-        Run the agent with the given prompt.
+        Respond to the given prompt.
 
         Args:
             prompt (str): The user prompt to send to the LLM.
 
         Returns:
-            str: The LLM's response.
+            str: The LLM's response text.
         """
         messages = [
             {"role": "system", "content": self.system_prompt},
@@ -96,6 +98,18 @@ class DirectPromptAgent:
 
         result = safe_openai_call(messages)
         return result["content"]
+
+    def run(self, prompt: str) -> str:
+        """
+        Legacy method for backward compatibility.
+
+        Args:
+            prompt (str): The user prompt to send to the LLM.
+
+        Returns:
+            str: The LLM's response.
+        """
+        return self.respond(prompt)
 
 
 class AugmentedPromptAgent:
@@ -118,15 +132,15 @@ class AugmentedPromptAgent:
         self.prompt_prefix = prompt_prefix
         self.prompt_suffix = prompt_suffix
 
-    def run(self, prompt: str) -> str:
+    def respond(self, prompt: str) -> str:
         """
-        Run the agent with the given prompt, augmented with prefix and suffix.
+        Respond to the given prompt, augmented with prefix and suffix.
 
         Args:
             prompt (str): The user prompt to send to the LLM.
 
         Returns:
-            str: The LLM's response.
+            str: The LLM's response text.
         """
         augmented_prompt = f"{self.prompt_prefix}{prompt}{self.prompt_suffix}"
 
@@ -137,6 +151,18 @@ class AugmentedPromptAgent:
 
         result = safe_openai_call(messages)
         return result["content"]
+
+    def run(self, prompt: str) -> str:
+        """
+        Legacy method for backward compatibility.
+
+        Args:
+            prompt (str): The user prompt to send to the LLM.
+
+        Returns:
+            str: The LLM's response.
+        """
+        return self.respond(prompt)
 
 
 class KnowledgeAugmentedPromptAgent:
@@ -156,15 +182,15 @@ class KnowledgeAugmentedPromptAgent:
         self.system_prompt = system_prompt
         self.knowledge = knowledge
 
-    def run(self, prompt: str) -> str:
+    def respond(self, prompt: str) -> str:
         """
-        Run the agent with the given prompt, augmented with knowledge.
+        Respond to the given prompt, augmented with knowledge.
 
         Args:
             prompt (str): The user prompt to send to the LLM.
 
         Returns:
-            str: The LLM's response.
+            str: The LLM's response text.
         """
         augmented_prompt = f"Using the following information:\n\n{self.knowledge}\n\nRespond to: {prompt}"
 
@@ -175,6 +201,18 @@ class KnowledgeAugmentedPromptAgent:
 
         result = safe_openai_call(messages)
         return result["content"]
+
+    def run(self, prompt: str) -> str:
+        """
+        Legacy method for backward compatibility.
+
+        Args:
+            prompt (str): The user prompt to send to the LLM.
+
+        Returns:
+            str: The LLM's response.
+        """
+        return self.respond(prompt)
 
 
 class RAGKnowledgePromptAgent:
@@ -218,15 +256,15 @@ class RAGKnowledgePromptAgent:
 
         return "\n\n".join(retrieved_knowledge)
 
-    def run(self, prompt: str) -> str:
+    def respond(self, prompt: str) -> str:
         """
-        Run the agent with the given prompt, augmented with retrieved knowledge.
+        Respond to the given prompt, augmented with retrieved knowledge.
 
         Args:
             prompt (str): The user prompt to send to the LLM.
 
         Returns:
-            str: The LLM's response.
+            str: The LLM's response text.
         """
         retrieved_knowledge = self.retrieve_knowledge(prompt)
         augmented_prompt = f"Using the following information:\n\n{retrieved_knowledge}\n\nRespond to: {prompt}"
@@ -238,6 +276,18 @@ class RAGKnowledgePromptAgent:
 
         result = safe_openai_call(messages)
         return result["content"]
+
+    def run(self, prompt: str) -> str:
+        """
+        Legacy method for backward compatibility.
+
+        Args:
+            prompt (str): The user prompt to send to the LLM.
+
+        Returns:
+            str: The LLM's response.
+        """
+        return self.respond(prompt)
 
 
 class EvaluationAgent:
@@ -254,56 +304,116 @@ class EvaluationAgent:
         """
         self.system_prompt = system_prompt
 
-    def evaluate(self, prompt: str, response: str, criteria: List[str] = None) -> Dict[str, Any]:
+    def evaluate(self, prompt: str, response: str, criteria: List[str] = None, max_iterations: int = 3) -> Dict[str, Any]:
         """
-        Evaluate a response based on the given criteria.
+        Evaluate a response based on the given criteria with iterative improvement.
 
         Args:
             prompt (str): The original prompt.
             response (str): The response to evaluate.
             criteria (List[str]): Specific criteria to evaluate against.
+            max_iterations (int): Maximum number of iterations for evaluation.
 
         Returns:
-            Dict[str, Any]: Evaluation results including scores and feedback.
+            Dict[str, Any]: Dictionary with final_response, evaluation, and iteration_count.
         """
         criteria_str = "\n".join([f"- {c}" for c in (criteria or ["Accuracy", "Completeness", "Relevance"])])
+        current_response = response
+        iteration_count = 0
 
-        evaluation_prompt = f"""
-        Original Prompt: {prompt}
+        while iteration_count < max_iterations:
+            evaluation_prompt = f"""
+            Original Prompt: {prompt}
 
-        Response to Evaluate: {response}
+            Response to Evaluate: {current_response}
 
-        Please evaluate the response based on the following criteria:
-        {criteria_str}
+            Please evaluate the response based on the following criteria:
+            {criteria_str}
 
-        For each criterion, provide a score from 1-10 and brief feedback.
-        Then provide an overall score and summary of the evaluation.
-        Format your response as a JSON object with the following structure:
-        {{
-            "criteria": {{
-                "criterion1": {{
-                    "score": X,
-                    "feedback": "Your feedback here"
+            For each criterion, provide a score from 1-10 and brief feedback.
+            Then provide an overall score and summary of the evaluation.
+
+            If the response needs improvement, provide specific correction instructions.
+
+            Format your response as a JSON object with the following structure:
+            {{
+                "criteria": {{
+                    "criterion1": {{
+                        "score": X,
+                        "feedback": "Your feedback here"
+                    }},
+                    ...
                 }},
-                ...
-            }},
-            "overall": {{
-                "score": X,
-                "summary": "Your summary here"
+                "overall": {{
+                    "score": X,
+                    "summary": "Your summary here"
+                }},
+                "needs_improvement": true/false,
+                "correction_instructions": "Specific instructions for improvement if needed"
             }}
-        }}
-        """
+            """
 
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": evaluation_prompt}
-        ]
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": evaluation_prompt}
+            ]
 
-        result = safe_openai_call(messages)
+            # Use temperature=0 for more consistent evaluations
+            result = safe_openai_call(messages, temperature=0)
+            evaluation_text = result["content"]
 
-        # In a real implementation, we would parse the JSON response
-        # For simplicity, we're returning the raw response
-        return result["content"]
+            # Try to parse the evaluation as JSON
+            try:
+                evaluation = json.loads(evaluation_text)
+
+                # Check if the response needs improvement
+                if not evaluation.get("needs_improvement", False) or iteration_count >= max_iterations - 1:
+                    # Return the final evaluation
+                    return {
+                        "final_response": current_response,
+                        "evaluation": evaluation,
+                        "iteration_count": iteration_count + 1
+                    }
+
+                # Get correction instructions
+                correction_instructions = evaluation.get("correction_instructions", "")
+
+                # Generate improved response
+                improvement_prompt = f"""
+                Original Prompt: {prompt}
+
+                Current Response: {current_response}
+
+                Evaluation: {json.dumps(evaluation, indent=2)}
+
+                Correction Instructions: {correction_instructions}
+
+                Please provide an improved response that addresses the correction instructions.
+                """
+
+                messages = [
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": improvement_prompt}
+                ]
+
+                improvement_result = safe_openai_call(messages)
+                current_response = improvement_result["content"]
+                iteration_count += 1
+
+            except json.JSONDecodeError:
+                # If we can't parse the evaluation as JSON, return what we have
+                return {
+                    "final_response": current_response,
+                    "evaluation": evaluation_text,
+                    "iteration_count": iteration_count + 1
+                }
+
+        # If we've reached the maximum number of iterations, return the current response
+        return {
+            "final_response": current_response,
+            "evaluation": evaluation_text,
+            "iteration_count": iteration_count
+        }
 
 
 class RoutingAgent:
@@ -337,7 +447,7 @@ class RoutingAgent:
 
     def route(self, prompt: str) -> Dict[str, Any]:
         """
-        Determine the appropriate route for a given prompt.
+        Determine the appropriate route for a given prompt using embeddings and cosine similarity.
 
         Args:
             prompt (str): The user prompt to route.
@@ -345,38 +455,85 @@ class RoutingAgent:
         Returns:
             Dict[str, Any]: The routing decision including route name and confidence.
         """
-        if not self.routes:
-            return {"route": None, "confidence": 0, "explanation": "No routes configured"}
+        # Import utils here to avoid circular imports
+        from phase_2.utils import get_embedding, cosine_similarity
 
-        routes_description = "\n".join([f"- {name}: {route['description']}" for name, route in self.routes.items()])
+        # Check if agents attribute exists and is not empty
+        if not hasattr(self, 'agents') or not self.agents:
+            if not self.routes:
+                return {"route": None, "confidence": 0, "explanation": "No routes configured"}
 
-        routing_prompt = f"""
-        User Request: {prompt}
+            # Fall back to traditional routing if agents attribute is not set
+            routes_description = "\n".join([f"- {name}: {route['description']}" for name, route in self.routes.items()])
 
-        Available Routes:
-        {routes_description}
+            routing_prompt = f"""
+            User Request: {prompt}
 
-        Analyze the user request and determine the most appropriate route.
-        Format your response as a JSON object with the following structure:
-        {{
-            "route": "route_name",
-            "confidence": X,  # A number between 0 and 1
-            "explanation": "Your explanation here"
-        }}
+            Available Routes:
+            {routes_description}
 
-        If none of the routes seem appropriate, set route to null and explain why.
+            Analyze the user request and determine the most appropriate route.
+            Format your response as a JSON object with the following structure:
+            {{
+                "route": "route_name",
+                "confidence": X,  # A number between 0 and 1
+                "explanation": "Your explanation here"
+            }}
+
+            If none of the routes seem appropriate, set route to null and explain why.
+            """
+
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": routing_prompt}
+            ]
+
+            result = safe_openai_call(messages)
+            return result["content"]
+
+        # Get embedding for the prompt
+        prompt_embedding = get_embedding(prompt)
+
+        # Calculate similarity scores for each agent
+        best_route = None
+        best_score = -1
+        best_explanation = ""
+
+        for agent in self.agents:
+            # Create a description that combines the agent's name, description, and expertise
+            agent_description = f"{agent['name']}: {agent['description']} Expertise: {', '.join(agent['expertise'])}"
+
+            # Get embedding for the agent description
+            agent_embedding = get_embedding(agent_description)
+
+            # Calculate similarity
+            similarity = cosine_similarity(prompt_embedding, agent_embedding)
+
+            if similarity > best_score:
+                best_score = similarity
+                best_route = agent['name']
+                best_explanation = f"This request matches the expertise of {agent['name']} with a similarity score of {similarity:.2f}."
+
+        # Format the result as a JSON string
+        result = {
+            "route": best_route,
+            "confidence": best_score,
+            "explanation": best_explanation
+        }
+
+        return json.dumps(result)
+
+    def respond(self, prompt: str) -> Dict[str, Any]:
         """
+        Respond to the given prompt by routing it to the appropriate handler.
 
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": routing_prompt}
-        ]
+        Args:
+            prompt (str): The user prompt to route.
 
-        result = safe_openai_call(messages)
-
-        # In a real implementation, we would parse the JSON response
-        # For simplicity, we're returning the raw response
-        return result["content"]
+        Returns:
+            Dict[str, Any]: The routing decision including route name and confidence.
+        """
+        return self.route(prompt)
 
     def process(self, prompt: str):
         """
@@ -389,13 +546,22 @@ class RoutingAgent:
             Any: The result from the handler.
         """
         routing_result = self.route(prompt)
-        # In a real implementation, we would parse the JSON response
-        # For simplicity, we're assuming the format and extracting the route
 
-        # This is a placeholder implementation
-        # In a real scenario, you would parse the JSON and get the route name
-        route_name = "default"  # Placeholder
+        # Parse the routing result
+        try:
+            routing_data = json.loads(routing_result) if isinstance(routing_result, str) else routing_result
+            route_name = routing_data.get("route", "default")
+        except (json.JSONDecodeError, AttributeError):
+            # If parsing fails, use default route
+            route_name = "default"
 
+        # Check if we have agents with func attribute
+        if hasattr(self, 'agents') and self.agents:
+            for agent in self.agents:
+                if agent.get('name') == route_name and 'func' in agent:
+                    return agent['func'](prompt)
+
+        # Fall back to traditional routes
         if route_name in self.routes:
             return self.routes[route_name]["handler"](prompt)
         else:
@@ -479,6 +645,18 @@ class ActionPlanningAgent:
         # For simplicity, we're returning the raw response
         return result["content"]
 
+    def respond(self, task: str) -> Dict[str, Any]:
+        """
+        Respond to the given task by planning and executing actions.
+
+        Args:
+            task (str): The task to accomplish.
+
+        Returns:
+            Dict[str, Any]: The results of the execution.
+        """
+        return self.run(task)
+
     def execute_plan(self, plan: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Execute a plan of actions.
@@ -531,11 +709,13 @@ class ActionPlanningAgent:
             Dict[str, Any]: The results of the execution.
         """
         plan_response = self.plan(task)
-        # In a real implementation, we would parse the JSON response
 
-        # This is a placeholder implementation
-        # In a real scenario, you would parse the JSON and get the plan
-        plan = []  # Placeholder
+        # Try to parse the plan
+        try:
+            plan = json.loads(plan_response) if isinstance(plan_response, str) else plan_response
+        except (json.JSONDecodeError, AttributeError):
+            # If parsing fails, use an empty plan
+            plan = []
 
         results = self.execute_plan(plan)
 

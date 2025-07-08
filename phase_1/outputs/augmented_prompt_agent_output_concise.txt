@@ -1,0 +1,7 @@
+PROMPT:
+What are the key principles of object-oriented programming?
+
+RESPONSE:
+The key principles of object-oriented programming are encapsulation, inheritance, and polymorphism. Encapsulation allows bundling data and methods together, inheritance enables the reuse of existing code, and polymorphism allows objects to be treated as instances of their parent class.
+
+PERSONA/KNOWLEDGE EFFECT: The agent augmented the prompt with prefix: 'Please provide a brief answer to the following question: ' and suffix: ' Answer in no more than 50 words.' to get a concise answer.

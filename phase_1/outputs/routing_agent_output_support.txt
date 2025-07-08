@@ -1,0 +1,6 @@
+PROMPT:
+Route this query: 'I need help resetting my account password.'
+
+RESPONSE:
+{"route": "support", "confidence": 0.39023085445982736, "explanation": "This request matches the expertise of support with a similarity score of 0.39."}
+

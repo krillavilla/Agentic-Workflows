@@ -106,6 +106,15 @@ python phase_2/agentic_workflow.py
 
 This will process three example emails and demonstrate the routing, response generation, and evaluation steps of the workflow.
 
+### Detailed Testing Guide
+
+For comprehensive instructions on how to test the functionality of this project, please refer to the [Testing Guide](TESTING_GUIDE.md). This guide includes:
+
+- Detailed steps for testing each agent
+- Expected outputs and how to verify them
+- Troubleshooting common issues
+- Advanced testing options
+
 ## Customization
 
 ### Adding New Agents

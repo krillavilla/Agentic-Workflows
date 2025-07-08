@@ -60,3 +60,5 @@ yarn-error.log*
 **/api_keys.txt
 **/credentials.json
 **/secrets.yaml
+
+TESTING_GUIDE.md
