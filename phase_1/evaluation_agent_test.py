@@ -1,9 +1,3 @@
-"""
-Test script for EvaluationAgent.
-
-This script demonstrates how to use the EvaluationAgent and verifies its functionality.
-"""
-
 import os
 import sys
 import json
@@ -20,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 from utils import format_output_file, save_output_file
 
 # Import the EvaluationAgent
-from workflow_agents.base_agents import EvaluationAgent
+from workflow_agents.base_agents import EvaluationAgent, DirectPromptAgent
 
 def main():
     """
@@ -33,9 +27,13 @@ def main():
         print("Example: OPENAI_API_KEY=your-api-key-here")
         return
 
-    # Create an EvaluationAgent
+    # Create a DirectPromptAgent to evaluate
+    agent_to_evaluate = DirectPromptAgent()
+    
+    # Create an EvaluationAgent with the required agent_to_evaluate parameter
     agent = EvaluationAgent(
-        system_prompt="You are a critical evaluator specialized in assessing the quality of technical explanations."
+        system_prompt="You are a critical evaluator specialized in assessing the quality of technical explanations.",
+        agent_to_evaluate=agent_to_evaluate
     )
 
     # Define a prompt and a response to evaluate

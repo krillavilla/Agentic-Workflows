@@ -32,6 +32,8 @@ As a Product Management Evaluator, you have:
 - Expertise in evaluating product requirements clarity and completeness
 """
 
+criteria_product_manager = ["Strategic Thinking", "Customer Focus", "Market Awareness", "Clarity", "Actionability"]
+
 # Program Manager Knowledge and Personas
 knowledge_program_manager = """
 As a Program Manager, you are responsible for:
@@ -60,6 +62,8 @@ As a Program Management Evaluator, you have:
 - Understanding of project dependencies and critical path analysis
 """
 
+criteria_program_manager = ["Project Planning", "Resource Management", "Risk Assessment", "Timeline Accuracy", "Clarity"]
+
 # Development Engineer Knowledge and Personas
 knowledge_dev_engineer = """
 As a Development Engineer, you are responsible for:
@@ -87,6 +91,8 @@ As a Development Engineering Evaluator, you have:
 - Understanding of security best practices and vulnerability assessment
 - Knowledge of scalability and maintainability principles
 """
+
+criteria_dev_engineer = ["Technical Accuracy", "Implementation Feasibility", "Code Quality", "Performance Consideration", "Security Awareness"]
 
 # Action Planning Knowledge and Personas
 knowledge_action_planning = """

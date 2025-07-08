@@ -70,16 +70,11 @@ def safe_openai_call(messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo
 class DirectPromptAgent:
     """
     A simple agent that sends a prompt directly to the LLM and returns the response.
+    No system prompt is used per rubric.
     """
 
-    def __init__(self, system_prompt: str = "You are a helpful assistant."):
-        """
-        Initialize the DirectPromptAgent.
-
-        Args:
-            system_prompt (str): The system prompt to use for the agent.
-        """
-        self.system_prompt = system_prompt
+    def __init__(self):
+        pass  # No system prompt required
 
     def respond(self, prompt: str) -> str:
         """
@@ -92,7 +87,6 @@ class DirectPromptAgent:
             str: The LLM's response text.
         """
         messages = [
-            {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": prompt}
         ]
 
@@ -295,123 +289,42 @@ class EvaluationAgent:
     An agent that evaluates responses or outputs based on specific criteria.
     """
 
-    def __init__(self, system_prompt: str = "You are a critical evaluator. Your job is to evaluate responses based on accuracy, completeness, and relevance."):
-        """
-        Initialize the EvaluationAgent.
-
-        Args:
-            system_prompt (str): The system prompt to use for the agent.
-        """
+    def __init__(self, system_prompt: str, agent_to_evaluate, max_interactions: int = 3):
         self.system_prompt = system_prompt
+        self.agent_to_evaluate = agent_to_evaluate
+        self.max_interactions = max_interactions
 
-    def evaluate(self, prompt: str, response: str, criteria: List[str] = None, max_iterations: int = 3) -> Dict[str, Any]:
-        """
-        Evaluate a response based on the given criteria with iterative improvement.
-
-        Args:
-            prompt (str): The original prompt.
-            response (str): The response to evaluate.
-            criteria (List[str]): Specific criteria to evaluate against.
-            max_iterations (int): Maximum number of iterations for evaluation.
-
-        Returns:
-            Dict[str, Any]: Dictionary with final_response, evaluation, and iteration_count.
-        """
-        criteria_str = "\n".join([f"- {c}" for c in (criteria or ["Accuracy", "Completeness", "Relevance"])])
-        current_response = response
+    def evaluate(self, prompt: str, initial_response: str, evaluation_criteria: str) -> dict:
+        current_response = initial_response
         iteration_count = 0
 
-        while iteration_count < max_iterations:
-            evaluation_prompt = f"""
-            Original Prompt: {prompt}
+        for i in range(self.max_interactions):
+            iteration_count += 1
 
-            Response to Evaluate: {current_response}
-
-            Please evaluate the response based on the following criteria:
-            {criteria_str}
-
-            For each criterion, provide a score from 1-10 and brief feedback.
-            Then provide an overall score and summary of the evaluation.
-
-            If the response needs improvement, provide specific correction instructions.
-
-            Format your response as a JSON object with the following structure:
-            {{
-                "criteria": {{
-                    "criterion1": {{
-                        "score": X,
-                        "feedback": "Your feedback here"
-                    }},
-                    ...
-                }},
-                "overall": {{
-                    "score": X,
-                    "summary": "Your summary here"
-                }},
-                "needs_improvement": true/false,
-                "correction_instructions": "Specific instructions for improvement if needed"
-            }}
-            """
-
-            messages = [
+            # Evaluate the response
+            evaluation_prompt = f"Evaluate the following response based on the criteria:\n\nCriteria: {evaluation_criteria}\n\nResponse: {current_response}"
+            eval_result = safe_openai_call([
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": evaluation_prompt}
-            ]
+            ], temperature=0)
 
-            # Use temperature=0 for more consistent evaluations
-            result = safe_openai_call(messages, temperature=0)
-            evaluation_text = result["content"]
+            if "GOOD" in eval_result["content"].upper():
+                break  # Acceptable response
 
-            # Try to parse the evaluation as JSON
-            try:
-                evaluation = json.loads(evaluation_text)
+            # Generate correction instructions
+            correction_prompt = f"The response did not meet the criteria. Give clear correction instructions:\n\nCriteria: {evaluation_criteria}\n\nResponse: {current_response}"
+            correction_result = safe_openai_call([
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": correction_prompt}
+            ], temperature=0)
 
-                # Check if the response needs improvement
-                if not evaluation.get("needs_improvement", False) or iteration_count >= max_iterations - 1:
-                    # Return the final evaluation
-                    return {
-                        "final_response": current_response,
-                        "evaluation": evaluation,
-                        "iteration_count": iteration_count + 1
-                    }
+            # Get a revised response from the evaluated agent
+            revised_input = prompt + "\n\nPlease apply the following revision: " + correction_result["content"]
+            current_response = self.agent_to_evaluate.respond(revised_input)
 
-                # Get correction instructions
-                correction_instructions = evaluation.get("correction_instructions", "")
-
-                # Generate improved response
-                improvement_prompt = f"""
-                Original Prompt: {prompt}
-
-                Current Response: {current_response}
-
-                Evaluation: {json.dumps(evaluation, indent=2)}
-
-                Correction Instructions: {correction_instructions}
-
-                Please provide an improved response that addresses the correction instructions.
-                """
-
-                messages = [
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": improvement_prompt}
-                ]
-
-                improvement_result = safe_openai_call(messages)
-                current_response = improvement_result["content"]
-                iteration_count += 1
-
-            except json.JSONDecodeError:
-                # If we can't parse the evaluation as JSON, return what we have
-                return {
-                    "final_response": current_response,
-                    "evaluation": evaluation_text,
-                    "iteration_count": iteration_count + 1
-                }
-
-        # If we've reached the maximum number of iterations, return the current response
         return {
             "final_response": current_response,
-            "evaluation": evaluation_text,
+            "evaluation": eval_result["content"],
             "iteration_count": iteration_count
         }
 

@@ -2,5 +2,5 @@ PROMPT:
 Route this query: 'I have a question about your service.'
 
 RESPONSE:
-{"route": "product", "confidence": 0.4144805468676434, "explanation": "This request matches the expertise of product with a similarity score of 0.41."}
+{"route": "product", "confidence": 0.4144156154508223, "explanation": "This request matches the expertise of product with a similarity score of 0.41."}
 

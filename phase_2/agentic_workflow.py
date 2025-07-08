@@ -119,23 +119,26 @@ def create_routing_agent(routing_knowledge):
     # Define the agents as a list of dictionaries
     agents = [
         {
-            "name": "product_manager",
-            "description": "Handles product strategy, requirements, and stakeholder coordination.",
+            "name": "Product Manager",
+            "description": "Responsible for defining product personas and user stories only. Does not define features or tasks. Does not group stories.",
             "expertise": ["product vision", "feature prioritization", "market analysis", "customer needs", 
-                         "product roadmap", "competitive analysis", "market positioning"]
+                         "product roadmap", "competitive analysis", "market positioning"],
+            "func": product_manager_support_function
         },
         {
-            "name": "program_manager",
-            "description": "Handles project planning, scheduling, and cross-team coordination.",
+            "name": "Program Manager",
+            "description": "Responsible for defining product features based on user stories. Does not define tasks or personas.",
             "expertise": ["project timelines", "resource allocation", "team coordination", 
                          "project dependencies", "status updates", "risk management", 
-                         "cross-team collaboration"]
+                         "cross-team collaboration"],
+            "func": program_manager_support_function
         },
         {
-            "name": "development_engineer",
-            "description": "Handles technical implementation, architecture, and problem-solving.",
+            "name": "Development Engineer",
+            "description": "Responsible for defining engineering tasks from features. Does not create user stories or define features.",
             "expertise": ["technical implementation", "code issues", "system architecture", 
-                         "technical feasibility", "performance optimization", "API specifications"]
+                         "technical feasibility", "performance optimization", "API specifications"],
+            "func": development_engineer_support_function
         }
     ]
 
@@ -189,7 +192,8 @@ def create_product_manager_evaluation_agent():
 
         Your job is to assess how well the Product Manager's response addresses strategic product concerns,
         demonstrates customer focus, shows market awareness, provides clarity, and offers actionable next steps.
-        """
+        """,
+        agent_to_evaluate=agent_to_evaluate
     )
 
 def create_program_manager_evaluation_agent():
@@ -203,10 +207,10 @@ def create_program_manager_evaluation_agent():
     agent_to_evaluate = create_program_manager_agent()
 
     evaluation_criteria = [
-        "Project Planning", 
-        "Resource Management", 
-        "Risk Assessment", 
-        "Timeline Accuracy", 
+        "Project Planning",
+        "Resource Management",
+        "Risk Assessment",
+        "Timeline Accuracy",
         "Clarity"
     ]
 
@@ -217,7 +221,8 @@ def create_program_manager_evaluation_agent():
 
         Your job is to assess how well the Program Manager's response addresses project planning,
         resource management, risk assessment, timeline accuracy, and provides clear next steps.
-        """
+        """,
+        agent_to_evaluate=agent_to_evaluate
     )
 
 def create_development_engineer_evaluation_agent():
@@ -245,7 +250,8 @@ def create_development_engineer_evaluation_agent():
 
         Your job is to assess how well the Development Engineer's response addresses technical accuracy,
         implementation feasibility, code quality considerations, performance implications, and security awareness.
-        """
+        """,
+        agent_to_evaluate=agent_to_evaluate
     )
 
 def create_action_planning_agent():
@@ -259,110 +265,107 @@ def create_action_planning_agent():
         system_prompt=persona_action_planning
     )
 
-def product_manager_support_function(email_content):
+def product_manager_support_function(query: str) -> dict:
     """
-    Support function for product manager tasks.
-
-    Args:
-        email_content (str): The content of the email to process
-
-    Returns:
-        dict: The processing results with final_response only
+    Uses the Product Manager Knowledge Agent and its EvaluationAgent to process a query.
     """
-    # Create the product manager agent
-    product_manager = create_product_manager_agent()
-
-    # Generate response
-    response = product_manager.respond(email_content)
-
-    # Create specialized evaluation agent for product manager
-    evaluation_agent = create_product_manager_evaluation_agent()
-
-    # Evaluate the response
-    evaluation_result = evaluation_agent.evaluate(
-        email_content,
-        response,
-        ["Strategic Thinking", "Customer Focus", "Market Awareness", "Clarity", "Actionability"],
-        max_iterations=2
+    from phase_2.knowledge_and_personas import (
+        persona_product_manager,
+        knowledge_product_manager,
+        persona_product_manager_eval,
+        criteria_product_manager,
     )
 
-    # Extract the final response from the evaluation result
-    final_response = evaluation_result.get("final_response", response)
+    product_agent = KnowledgeAugmentedPromptAgent(
+        system_prompt=persona_product_manager,
+        knowledge=knowledge_product_manager
+    )
+
+    evaluation_agent = EvaluationAgent(
+        system_prompt=persona_product_manager_eval,
+        agent_to_evaluate=product_agent
+    )
+
+    raw_response = product_agent.respond(query)
+    evaluation_result = evaluation_agent.evaluate(query, raw_response, criteria_product_manager)
+    final_response = evaluation_result["final_response"]
 
     # Generate user stories
-    user_stories = generate_user_stories(email_content, final_response)
+    user_stories = generate_user_stories(query, final_response)
 
-    return final_response
+    return {
+        "response": final_response,
+        "evaluation": evaluation_result["evaluation"],
+        "user_stories": user_stories
+    }
 
-def program_manager_support_function(email_content):
+def program_manager_support_function(query: str) -> dict:
     """
-    Support function for program manager tasks.
-
-    Args:
-        email_content (str): The content of the email to process
-
-    Returns:
-        dict: The processing results with final_response only
+    Uses the Program Manager Knowledge Agent and its EvaluationAgent to process a query.
     """
-    # Create the program manager agent
-    program_manager = create_program_manager_agent()
-
-    # Generate response
-    response = program_manager.respond(email_content)
-
-    # Create specialized evaluation agent for program manager
-    evaluation_agent = create_program_manager_evaluation_agent()
-
-    # Evaluate the response
-    evaluation_result = evaluation_agent.evaluate(
-        email_content,
-        response,
-        ["Project Planning", "Resource Management", "Risk Assessment", "Timeline Accuracy", "Clarity"],
-        max_iterations=2
+    from phase_2.knowledge_and_personas import (
+        persona_program_manager,
+        knowledge_program_manager,
+        persona_program_manager_eval,
+        criteria_program_manager,
     )
 
-    # Extract the final response from the evaluation result
-    final_response = evaluation_result.get("final_response", response)
+    program_agent = KnowledgeAugmentedPromptAgent(
+        system_prompt=persona_program_manager,
+        knowledge=knowledge_program_manager
+    )
+
+    evaluation_agent = EvaluationAgent(
+        system_prompt=persona_program_manager_eval,
+        agent_to_evaluate=program_agent
+    )
+
+    raw_response = program_agent.respond(query)
+    evaluation_result = evaluation_agent.evaluate(query, raw_response, criteria_program_manager)
+    final_response = evaluation_result["final_response"]
 
     # Generate features
-    features = generate_features(email_content, final_response)
+    features = generate_features(query, final_response)
 
-    return final_response
+    return {
+        "response": final_response,
+        "evaluation": evaluation_result["evaluation"],
+        "features": features
+    }
 
-def development_engineer_support_function(email_content):
+def development_engineer_support_function(query: str) -> dict:
     """
-    Support function for development engineer tasks.
-
-    Args:
-        email_content (str): The content of the email to process
-
-    Returns:
-        dict: The processing results with final_response only
+    Uses the Development Engineer Knowledge Agent and its EvaluationAgent to process a query.
     """
-    # Create the development engineer agent
-    development_engineer = create_development_engineer_agent()
-
-    # Generate response
-    response = development_engineer.respond(email_content)
-
-    # Create specialized evaluation agent for development engineer
-    evaluation_agent = create_development_engineer_evaluation_agent()
-
-    # Evaluate the response
-    evaluation_result = evaluation_agent.evaluate(
-        email_content,
-        response,
-        ["Technical Accuracy", "Implementation Feasibility", "Code Quality", "Performance Consideration", "Security Awareness"],
-        max_iterations=2
+    from phase_2.knowledge_and_personas import (
+        persona_dev_engineer,
+        knowledge_dev_engineer,
+        persona_dev_engineer_eval,
+        criteria_dev_engineer,
     )
 
-    # Extract the final response from the evaluation result
-    final_response = evaluation_result.get("final_response", response)
+    dev_agent = KnowledgeAugmentedPromptAgent(
+        system_prompt=persona_dev_engineer,
+        knowledge=knowledge_dev_engineer
+    )
+
+    evaluation_agent = EvaluationAgent(
+        system_prompt=persona_dev_engineer_eval,
+        agent_to_evaluate=dev_agent
+    )
+
+    raw_response = dev_agent.respond(query)
+    evaluation_result = evaluation_agent.evaluate(query, raw_response, criteria_dev_engineer)
+    final_response = evaluation_result["final_response"]
 
     # Generate engineering tasks
-    engineering_tasks = generate_engineering_tasks(email_content, final_response)
+    engineering_tasks = generate_engineering_tasks(query, final_response)
 
-    return final_response
+    return {
+        "response": final_response,
+        "evaluation": evaluation_result["evaluation"],
+        "engineering_tasks": engineering_tasks
+    }
 
 def generate_user_stories(email_content, response):
     """
@@ -403,6 +406,21 @@ def generate_user_stories(email_content, response):
         return json.loads(result)
     except:
         return [result]
+
+def generate_features_prompt(user_stories: list) -> str:
+    joined_stories = "\n".join(user_stories)
+    return f"""
+    Based on the following user stories, create product features.
+    For each feature, use this format:
+
+    Feature Name: <clear title>
+    Description: <what it does>
+    Key Functionality: <specific capabilities>
+    User Benefit: <value to the user>
+
+    User Stories:
+    {joined_stories}
+    """
 
 def generate_features(email_content, response):
     """
@@ -455,6 +473,24 @@ def generate_features(email_content, response):
                  "Description": result, 
                  "Key Functionality": "N/A", 
                  "User Benefit": "N/A"}]
+
+def generate_engineering_tasks_prompt(features: list) -> str:
+    joined_features = "\n".join(features)
+    return f"""
+    Based on the following features, create engineering tasks.
+    For each task, use this format:
+
+    Task ID: <unique ID>
+    Task Title: <short description>
+    Related User Story: <linked story>
+    Description: <detailed steps>
+    Acceptance Criteria: <completion conditions>
+    Estimated Effort: <time or complexity>
+    Dependencies: <any prerequisite tasks>
+
+    Features:
+    {joined_features}
+    """
 
 def generate_engineering_tasks(email_content, response):
     """
