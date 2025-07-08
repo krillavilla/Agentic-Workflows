@@ -62,3 +62,5 @@ yarn-error.log*
 **/secrets.yaml
 
 TESTING_GUIDE.md
+
+agentic-wrkflow-env
